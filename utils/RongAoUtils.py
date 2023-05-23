@@ -138,8 +138,8 @@ class RongAoUtils:
         """
         返回归一化的速度矢量
         """
-        heading = RongAoUtils.degree2Rad(90 - planeInfo['Heading'])
-        pitch = RongAoUtils.degree2Rad(planeInfo['Pitch'])
+        heading = planeInfo['Heading']
+        pitch = planeInfo['Pitch']
         dx = math.cos(pitch) * math.cos(heading)
         dy = math.cos(pitch) * math.sin(heading)
         dz = math.sin(pitch)

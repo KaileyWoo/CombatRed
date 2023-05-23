@@ -11,21 +11,21 @@ action_std_decay_freq = int(2.5e5)  # action_std decay frequency (in num timeste
 update_timestep = 25      # update policy every n timesteps
 K_epochs = 160               # update policy for K epochs in one PPO update
 eps_clip = 0.15          # clip parameter for PPO
-gamma = 0.99            # discount factor
+gamma = 0.9999            # discount factor
 lr_actor = 0.0003       # learning rate for actor network
 lr_critic = 0.001       # learning rate for critic network
 random_seed = 0         # set random seed if required (0 = no random seed)
 
-StateDim = 15 # 状态维度
+StateDim = 13 # 状态维度
 ActionDim = 4  # 动作维度
-Train = 0  # 0，1，2分别表示：0重新训练，1加载之前的训练，2测试模式
+Train = 1  # 0，1，2分别表示：0重新训练，1加载之前的训练，2测试模式
 
 #Distance_To_Win = 1000  #设置对局获胜需要的尾追距离
 
 #  for test
-flag_multiprocessing = False
-use_adv_norm = True  # Trick 1:advantage normalization
-use_state_norm = True  # Trick 2:state normalization
+flag_multiprocessing = True
+#use_adv_norm = True  # Trick 1:advantage normalization
+use_state_norm = False  # Trick 2:state normalization
 use_reward_norm = False   # Trick 3:reward normalization
 use_reward_scaling = False  # Trick 4:reward scaling
 use_lr_decay = False  # Trick 6:learning rate Decay

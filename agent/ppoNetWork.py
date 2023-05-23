@@ -1,3 +1,5 @@
+import math
+
 import torch
 import torch.nn as nn
 from torch.distributions import MultivariateNormal
@@ -48,32 +50,32 @@ class ActorCritic(nn.Module):
 
         if has_continuous_action_space:
             self.action_dim = action_dim
-            self.action_var = torch.full((action_dim,), action_std_init * action_std_init)
+            #self.action_var = torch.full((action_dim,), action_std_init * action_std_init)
 
         # actor
         if has_continuous_action_space:
-            self.actor = nn.Sequential(
-                nn.Linear(state_dim, 64),
-                nn.Tanh(),
-                nn.Linear(64, 64),
-                nn.Tanh(),
-                nn.Linear(64, action_dim),
-                nn.Tanh()  # 限制在-1,1
-            )
             # self.actor = nn.Sequential(
-            #     nn.Linear(state_dim, 256),
+            #     nn.Linear(state_dim, 64),
             #     nn.Tanh(),
-            #     nn.Linear(256, 256),
+            #     nn.Linear(64, 64),
             #     nn.Tanh(),
-            #     nn.Linear(256, 256),
-            #     nn.Tanh(),
-            #     nn.Linear(256, 256),
-            #     nn.Tanh(),
-            #     nn.Linear(256, action_dim),
+            #     nn.Linear(64, action_dim),
             #     nn.Tanh()  # 限制在-1,1
             # )
-            # # We use 'nn.Parameter' to train log_std automatically
-            # self.action_var = nn.Parameter(torch.full((action_dim,), action_std_init * action_std_init))
+            self.actor = nn.Sequential(
+                nn.Linear(state_dim, 256),
+                nn.Tanh(),
+                nn.Linear(256, 256),
+                nn.Tanh(),
+                nn.Linear(256, 256),
+                nn.Tanh(),
+                nn.Linear(256, 256),
+                nn.Tanh(),
+                nn.Linear(256, action_dim),
+                nn.Tanh()  # 限制在-1,1
+            )
+            # We use 'nn.Parameter' to train log_std automatically
+            self.action_var = nn.Parameter(torch.full((action_dim,), action_std_init * action_std_init))
         else:
             self.actor = nn.Sequential(
                 nn.Linear(state_dim, 64),
@@ -85,24 +87,24 @@ class ActorCritic(nn.Module):
             )
 
         # critic
-        self.critic = nn.Sequential(
-            nn.Linear(state_dim, 64),
-            nn.Tanh(),
-            nn.Linear(64, 64),
-            nn.Tanh(),
-            nn.Linear(64, 1)
-        )
         # self.critic = nn.Sequential(
-        #     nn.Linear(state_dim, 256),
+        #     nn.Linear(state_dim, 64),
         #     nn.Tanh(),
-        #     nn.Linear(256, 256),
+        #     nn.Linear(64, 64),
         #     nn.Tanh(),
-        #     nn.Linear(256, 256),
-        #     nn.Tanh(),
-        #     nn.Linear(256, 256),
-        #     nn.Tanh(),
-        #     nn.Linear(256, 1)
+        #     nn.Linear(64, 1)
         # )
+        self.critic = nn.Sequential(
+            nn.Linear(state_dim, 256),
+            nn.Tanh(),
+            nn.Linear(256, 256),
+            nn.Tanh(),
+            nn.Linear(256, 256),
+            nn.Tanh(),
+            nn.Linear(256, 256),
+            nn.Tanh(),
+            nn.Linear(256, 1)
+        )
 
     def set_action_std(self, new_action_std):
 
@@ -120,6 +122,7 @@ class ActorCritic(nn.Module):
 
         if self.has_continuous_action_space:
             action_mean = self.actor(state)  # -1,1
+            #print("act/self.action_var", self.action_var)
             cov_mat = torch.diag(self.action_var.to(device)).unsqueeze(dim=0)  # 有一个方差
             dist = MultivariateNormal(action_mean, cov_mat)
         else:
@@ -136,6 +139,7 @@ class ActorCritic(nn.Module):
 
         if self.has_continuous_action_space:
             action_mean = self.actor(state)
+            #print("evaluate/self.action_var", self.action_var)
             action_var = self.action_var.to(device).expand_as(action_mean)
             cov_mat = torch.diag_embed(action_var).to(device)
             dist = MultivariateNormal(action_mean, cov_mat)
@@ -241,10 +245,18 @@ class PPO:
         # Monte Carlo estimate of returns
         rewards = []
         discounted_reward = 0
+        count = 0
         for reward, is_terminal in zip(reversed(self.buffer.rewards), reversed(self.buffer.is_terminals)):
             if (flag_multiprocessing and is_terminal != 0) or (not flag_multiprocessing and is_terminal):
                 discounted_reward = 0
+                count = 0
             discounted_reward = reward + (self.gamma * discounted_reward)
+            count += 1
+            if math.fabs(discounted_reward) < 0.001:
+                #print("无效奖励步数为：", count, "discounted_reward = ", discounted_reward)
+                filename = log_result_dir + 'Reward_Step_Number.txt'
+                with open(filename, 'a') as file:
+                    file.write("{} \n".format(count))
             rewards.insert(0, discounted_reward)
 
         # Normalizing the rewards

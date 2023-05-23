@@ -40,12 +40,13 @@ class PPOAGENT(Agent):
         self.planeID = []
         self.episode = 0
         self.track = {}
+        self.currentRewardBuffer = []
+        self.writer = SummaryWriter(log_dir=log_result_dir + '/SummaryWriterLogs')
         self.state_norm = Normalization(shape=StateDim)  # Trick 2:state normalization
         if use_reward_norm:  # Trick 3:reward normalization
             self.reward_norm = Normalization(shape=1)
         elif use_reward_scaling:  # Trick 4:reward scaling
             self.reward_scaling = RewardScaling(shape=1, gamma=gamma)
-        #self.writer = SummaryWriter(log_dir=log_result_dir+'/SummaryWriter')
 
     def reset(self):
         if flag_multiprocessing:
@@ -58,6 +59,7 @@ class PPOAGENT(Agent):
         self.preState = None
         self.Action = ACTION.copy()
         self.Epi_Rewards = 0
+        self.currentRewardBuffer.clear()
         self.episode += 1
         if use_reward_scaling:
             self.reward_scaling.reset()
@@ -77,16 +79,17 @@ class PPOAGENT(Agent):
             self.nowState, Reward, self.done = getStateRewardDone(self.nowInfo, self.preInfo,self.CurTime)
             if flag_multiprocessing:
                 action["done"] = self.done  # 结束标志
-            if use_state_norm:
-                self.nowState = self.state_norm(np.array(self.nowState))
-            if use_reward_norm:
-                Reward = self.reward_norm(Reward)
-            elif use_reward_scaling:
-                Reward = self.reward_scaling(Reward)
+            # if use_state_norm:
+            #     self.nowState = self.state_norm(np.array(self.nowState))
+            # if use_reward_norm:
+            #     Reward = self.reward_norm(Reward)
+            # elif use_reward_scaling:
+            #     Reward = self.reward_scaling(Reward)
             self.Epi_Rewards += Reward
             self.ppoModel.buffer.rewards.append(Reward)
             self.ppoModel.buffer.is_terminals.append(self.done)
             self.stepAction = self.ppoModel.select_action(self.nowState)
+            self.currentRewardBuffer.append(Reward)
             Actions = []
             for a in self.stepAction:  # 输出裁剪
                 if a <= -1:
@@ -101,7 +104,12 @@ class PPOAGENT(Agent):
                 self.Action = action
                 self.preInfo = self.nowInfo
             elif Train != 2:
-                #self.writer.add_scalar('rewards', self.Epi_Rewards, global_step=self.episode)
+                self.writer.add_scalars('Total_Rewards',
+                                   {'max_reward': np.max(self.currentRewardBuffer),
+                                    'min_reward': np.min(self.currentRewardBuffer),
+                                    'avg_reward': np.mean(self.currentRewardBuffer)},
+                                   self.episode)
+                self.writer.flush()
                 print(" ------------------------ Rewards：", self.Epi_Rewards)
                 filename = log_result_dir + 'Reward_list.txt'
                 with open(filename, 'a') as file:
@@ -110,6 +118,10 @@ class PPOAGENT(Agent):
                 # with open(filename1, 'a') as file:
                 #     file.write("{} \n".format(self.CurTime))
                 if self.episode % save_model_freq == 0:
+                    self.writer1 = SummaryWriter(log_result_dir + f'/SummaryWriterLogs/experiment_{self.episode}')
+                    for i, reward in enumerate(self.currentRewardBuffer):
+                        self.writer1.add_scalar('Step_Reward', reward, i)
+                    self.writer1.flush()
                     self.ppoModel.save()
                 if self.episode % update_timestep == 0:
                     self.ppoModel.update(self.episode)

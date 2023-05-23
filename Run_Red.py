@@ -1,7 +1,7 @@
 from env.CombatEnv_Red import AirCombat_Red
 from agent.ppo_agent import PPOAGENT
 import time
-EPISODE = 10000  # 进行训练的对局轮数
+EPISODE = 20000  # 进行训练的对局轮数
 
 def main(Episode,red):
     for i in range(Episode):

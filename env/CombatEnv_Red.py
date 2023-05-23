@@ -37,9 +37,6 @@ class AirCombat_Red:
         self.rcv_one_game_end = False
         # 缓存接收到的报文
         self.rcv_msg = bytes()
-        self.start_time = 0
-        self.end_time = 0
-        self.init_flag =0
 
     def msgInit(self):
         """
@@ -50,11 +47,9 @@ class AirCombat_Red:
         msg_len_data = struct.pack('i', msg_len)
         self.Red_client.send(msg_len_data)
         self.Red_client.send(Red_json_str.encode("utf-8"))
-        self.start_time = time.time()
 
     def reset(self):
         self.rcv_one_game_end = False
-        self.init_flag = 0
         #self.RedAgent.reset()
 
     def step(self):
@@ -62,10 +57,6 @@ class AirCombat_Red:
         环境更新,31代表机动，32代表打击
         """
         cur_msg = self.Red_client.recv(1024 * 10)
-        # self.end_time = time.time()
-        # if self.init_flag <= 2:
-        #     self.init_flag += 1
-            #print(self.init_flag)
         self.rcv_msg = self.rcv_msg + cur_msg
         total_len = len(self.rcv_msg)
         while total_len > 4:
@@ -90,16 +81,6 @@ class AirCombat_Red:
                         if self.RedAgent.done != 0:
                             self.RedAgent.reset()
                             self.rcv_one_game_end = True
-                        # elapsed_time = self.end_time - self.start_time
-                        # print("网络接受时间,elapsed_time: ", elapsed_time * 1000, "ms")
-                        # self.start_time = self.end_time
-                        # if len(Red_json_str_recv["msg_info"])!=0 and (elapsed_time*1000 > 200 or self.init_flag <= 2):
-                        #     self.start_time = self.end_time
-                        #     #print("网络接受时间,elapsed_time: ", elapsed_time * 1000, "ms")
-                        #     RedActionInfo = self.RedAgent.action(Red_json_str_recv["msg_info"], self.CurTime)
-                        # else:
-                        #     RedActionInfo = self.RedAgent.getAction()
-                        #print(RedActionInfo)
                         if len(Red_json_str_recv["msg_info"]) != 0:
                             RedActionInfo = self.RedAgent.action(Red_json_str_recv["msg_info"], self.CurTime)
                         else:
