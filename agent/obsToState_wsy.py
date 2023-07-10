@@ -93,6 +93,9 @@ def getStateRewardDone(cur_observation,pre_observation,time):
     pre_self_alpha = pre_track['alpha']
     cur_self_beta = cur_track['beta']
     pre_self_beta = pre_track['beta']
+    cur_self_p = cur_track['p']  # 滚转角速度(弧度每秒)
+    cur_self_q = cur_track['q']  # 俯仰角速度(弧度每秒)
+    cur_self_r = cur_track['r']  # 侧滑角速度(弧度每秒)
     cur_self_v_real = (cur_self_v_e*cur_self_v_e + cur_self_v_d*cur_self_v_d + cur_self_v_n*cur_self_v_n)**0.5
     pre_self_v_real = (pre_self_v_e * pre_self_v_e + pre_self_v_d * pre_self_v_d + pre_self_v_n * pre_self_v_n) ** 0.5
 
@@ -148,7 +151,7 @@ def getStateRewardDone(cur_observation,pre_observation,time):
         if flag_multiprocessing:
             DONE = 2
         print("高度越界,当前高度为:", cur_self_alt)
-    elif cur_self_alpha < -math.pi / 15 or cur_self_alpha > math.pi / 4.5:
+    elif cur_self_alpha < -math.pi / 15 or cur_self_alpha > math.pi / 4.5: #[-12,40]
         REWARD = -30
         if flag_multiprocessing:
             DONE = 2
@@ -250,7 +253,7 @@ def getStateRewardDone(cur_observation,pre_observation,time):
                     REWARD_DISTANCE += 5#1
 
             # 迎角奖励
-            if cur_self_alpha < -math.pi / 18 or cur_self_alpha > math.pi / 6:
+            if cur_self_alpha < -math.pi / 18 or cur_self_alpha > math.pi / 6: # [-10,30]
                 REWARD_ALPHA -= 1
 
             # 总奖励值

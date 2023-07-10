@@ -11,8 +11,8 @@ action_std_decay_freq = int(2.5e5)  # action_std decay frequency (in num timeste
 update_timestep = 25      # update policy every n timesteps
 K_epochs = 160               # update policy for K epochs in one PPO update
 eps_clip = 0.15          # clip parameter for PPO
-gamma = 0.9999            # discount factor
-lr_actor = 0.0003       # learning rate for actor network
+gamma = 0.999            # discount factor
+lr_actor = 0.0003 #0.0003       # learning rate for actor network
 lr_critic = 0.001       # learning rate for critic network
 random_seed = 0         # set random seed if required (0 = no random seed)
 
@@ -34,18 +34,18 @@ use_grad_clip = True  # Trick 7: Gradient clip
 log_dir_1 = "agent/red_Agent/ppo_agent"
 if not os.path.exists(log_dir_1):
     os.makedirs(log_dir_1)
-log_dir = log_dir_1 + "/model_TB_ScenarioInfo1/002/"
+log_dir = log_dir_1 + "/model_TB_ScenarioInfo1/003/"
 if not os.path.exists(log_dir):
     os.makedirs(log_dir)
 # else:
 #     if Train==0 and os.path.exists(log_dir + "ppo.pkl"):
 #         os.remove(log_dir + "ppo.pkl")
 
-load_dir = log_dir_1 + "/model_TB_ScenarioInfo1/002/"
+load_dir = log_dir_1 + "/model_TB_ScenarioInfo1/003/"
 if not os.path.exists(load_dir):
     os.makedirs(load_dir)
 
-log_result_dir = "./myResult/TB_ScenarioInfo1/002/"
+log_result_dir = "./myResult/TB_ScenarioInfo1/003/"
 if not os.path.exists(log_result_dir):
     os.makedirs(log_result_dir)
 # else:

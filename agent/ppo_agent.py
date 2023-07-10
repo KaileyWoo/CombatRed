@@ -26,8 +26,14 @@ class PPOAGENT(Agent):
         else:
             self.done = False
         self.camp = camp
+        self.episode = 11293
         self.nowInfo = None
         self.Epi_Rewards = 0
+        self.Alt_Rewards = 0
+        self.Attack_Rewards = 0
+        self.Dist_Rewards = 0
+        self.Alpha_Rewards = 0
+        self.Beta_Rewards = 0
         self.preInfo = None
         self.nowState = None
         self.preState = None
@@ -38,10 +44,10 @@ class PPOAGENT(Agent):
         if Train == 2 or Train == 1:
             self.ppoModel.load()
         self.planeID = []
-        self.episode = 0
         self.track = {}
         self.currentRewardBuffer = []
-        self.writer = SummaryWriter(log_dir=log_result_dir + '/SummaryWriterLogs')
+        if Train != 2:
+            self.writer = SummaryWriter(log_dir=log_result_dir + '/SummaryWriterLogs')
         self.state_norm = Normalization(shape=StateDim)  # Trick 2:state normalization
         if use_reward_norm:  # Trick 3:reward normalization
             self.reward_norm = Normalization(shape=1)
@@ -59,6 +65,11 @@ class PPOAGENT(Agent):
         self.preState = None
         self.Action = ACTION.copy()
         self.Epi_Rewards = 0
+        self.Alt_Rewards = 0
+        self.Attack_Rewards = 0
+        self.Dist_Rewards = 0
+        self.Alpha_Rewards = 0
+        self.Beta_Rewards = 0
         self.currentRewardBuffer.clear()
         self.episode += 1
         if use_reward_scaling:
@@ -76,7 +87,7 @@ class PPOAGENT(Agent):
         if self.preInfo == None:
             self.preInfo = self.nowInfo
         else:
-            self.nowState, Reward, self.done = getStateRewardDone(self.nowInfo, self.preInfo,self.CurTime)
+            self.nowState, Reward, self.done, AltReward, DisReward, AttackReward, AlphaReward, BataReward = getStateRewardDone(self.nowInfo, self.preInfo,self.CurTime)
             if flag_multiprocessing:
                 action["done"] = self.done  # 结束标志
             # if use_state_norm:
@@ -86,6 +97,11 @@ class PPOAGENT(Agent):
             # elif use_reward_scaling:
             #     Reward = self.reward_scaling(Reward)
             self.Epi_Rewards += Reward
+            self.Alt_Rewards += AltReward
+            self.Dist_Rewards += DisReward
+            self.Attack_Rewards += AttackReward
+            self.Alpha_Rewards += AlphaReward
+            self.Beta_Rewards += BataReward
             self.ppoModel.buffer.rewards.append(Reward)
             self.ppoModel.buffer.is_terminals.append(self.done)
             self.stepAction = self.ppoModel.select_action(self.nowState)
@@ -105,12 +121,16 @@ class PPOAGENT(Agent):
                 self.preInfo = self.nowInfo
             elif Train != 2:
                 self.writer.add_scalars('Total_Rewards',
-                                   {'max_reward': np.max(self.currentRewardBuffer),
-                                    'min_reward': np.min(self.currentRewardBuffer),
-                                    'avg_reward': np.mean(self.currentRewardBuffer)},
+                                   {'avg_reward': np.mean(self.currentRewardBuffer),
+                                    'episode_reward': self.Epi_Rewards,
+                                    'Alt_Rewards': self.Alt_Rewards,
+                                    'Dist_Rewards': self.Dist_Rewards,
+                                    'Attack_Rewards': self.Attack_Rewards,
+                                    'Alpha_Rewards': self.Alpha_Rewards,
+                                    'Beta_Rewards': self.Beta_Rewards},
                                    self.episode)
                 self.writer.flush()
-                print(" ------------------------ Rewards：", self.Epi_Rewards)
+                print(" ********************************** Rewards：", self.Epi_Rewards)
                 filename = log_result_dir + 'Reward_list.txt'
                 with open(filename, 'a') as file:
                     file.write("{} \n".format(self.Epi_Rewards))
